@@ -13,8 +13,8 @@ const createParticles = (x, y, color, count = 8) => {
 };
 
 const StickWarGame = () => {
-  const [gold, setGold] = useState(999995999); 
-  const [enemyGold, setEnemyGold] = useState(5000);
+  const [gold, setGold] = useState(500); 
+  const [enemyGold, setEnemyGold] = useState(500);
   const [units, setUnits] = useState([]);
   const [projectiles, setProjectiles] = useState([]);
   const [particles, setParticles] = useState([]);
@@ -270,6 +270,10 @@ const StickWarGame = () => {
 
       <div className="relative flex-1 w-full bg-[#030712] overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,_#1e1b4b,_transparent)]"></div>
+        
+        {/* Sky / Moon */}
+        <div className="absolute top-20 right-40 w-32 h-32 bg-white rounded-full blur-xl opacity-20"></div>
+
         {mines.map(mine => (
           <div key={mine.id} className="absolute bottom-40 w-40 h-40 flex flex-col items-center" style={{ left: mine.x, transform: 'translateX(-50%)' }}>
               <div className={`relative w-32 h-20 bg-gradient-to-br from-yellow-500 via-yellow-700 to-yellow-900 rounded-2xl shadow-2xl border-2 border-yellow-300 flex flex-col items-center justify-center transition-opacity duration-1000 ${mine.amount <= 0 ? 'opacity-20 grayscale' : 'opacity-100'}`}>
@@ -281,10 +285,27 @@ const StickWarGame = () => {
               <div className="mt-3 text-sm font-black text-yellow-500 drop-shadow-lg">{mine.amount > 0 ? `${mine.amount} G` : 'EXHAUSTED'}</div>
           </div>
         ))}
-        <div className="absolute left-0 bottom-40 w-56 h-[500px] border-l-[25px] border-blue-600/30 bg-gradient-to-r from-blue-600/10 to-transparent rounded-tr-full"></div>
-        <div className="absolute right-0 bottom-40 w-56 h-[500px] border-r-[25px] border-red-600/30 bg-gradient-to-l from-red-600/10 to-transparent rounded-tl-full"></div>
-        <div className="absolute bottom-0 w-full h-[100px] bg-zinc-950 border-t-4 border-zinc-900 shadow-[0_-50px_100px_rgba(0,0,0,0.9)]"></div>
+
+        {/* Player Base Graphics */}
+        <div className="absolute left-0 bottom-40 w-64 h-96 flex flex-col items-center justify-end">
+           <div className="w-48 h-80 bg-gradient-to-t from-slate-800 to-slate-900 border-r-8 border-blue-500/50 rounded-tr-[100px] relative">
+              <div className="absolute top-10 left-10 w-4 h-4 bg-blue-400 rounded-full animate-pulse shadow-[0_0_20px_blue]"></div>
+              <div className="absolute top-24 left-15 w-4 h-4 bg-blue-400 rounded-full animate-pulse shadow-[0_0_20px_blue]"></div>
+           </div>
+        </div>
+
+        {/* Enemy Base Graphics */}
+        <div className="absolute right-0 bottom-40 w-64 h-96 flex flex-col items-center justify-end">
+           <div className="w-48 h-80 bg-gradient-to-t from-zinc-800 to-zinc-950 border-l-8 border-red-600/50 rounded-tl-[100px] relative">
+              <div className="absolute top-10 right-10 w-4 h-4 bg-red-600 rounded-full animate-pulse shadow-[0_0_20px_red]"></div>
+              <div className="absolute top-24 right-15 w-4 h-4 bg-red-600 rounded-full animate-pulse shadow-[0_0_20px_red]"></div>
+           </div>
+        </div>
+
+        <div className="absolute bottom-0 w-full h-[100px] bg-gradient-to-b from-zinc-900 to-black border-t-4 border-zinc-800 shadow-[0_-50px_100px_rgba(0,0,0,0.9)]"></div>
+        
         {particles.map(p => ( <div key={p.id} className="absolute w-2 h-2 rounded-full pointer-events-none blur-[1px] z-[1000]" style={{ left: p.x, bottom: p.y, backgroundColor: p.color, opacity: p.life }}></div> ))}
+        
         {projectiles.map(p => ( 
           <div key={p.id} 
                style={{ left: p.x, bottom: p.y, transform: `rotate(${p.angle}deg)` }} 
@@ -292,6 +313,7 @@ const StickWarGame = () => {
              {p.isMeteor && <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></div>}
           </div> 
         ))}
+
         {units.map(unit => (
           <div
             key={unit.id}
@@ -307,6 +329,7 @@ const StickWarGame = () => {
                <div className={`h-full ${unit.side === 'player' ? 'bg-gradient-to-r from-blue-600 to-blue-400' : 'bg-gradient-to-r from-red-700 to-red-500'}`} style={{ width: `${(unit.currentHealth/unit.health)*100}%` }}></div>
             </div>
             <div className={`relative ${unit.side === 'enemy' ? 'scale-x-[-1]' : ''}`}>
+               {/* Body Part - Visual Polish */}
                <div className={`w-5 h-5 rounded-full border-2 ${unit.side === 'player' ? 'bg-white border-blue-400 shadow-[0_0_10px_#3b82f6]' : 'bg-zinc-300 border-red-600 shadow-[0_0_10px_#ef4444]'}`}></div>
                <div className={`w-[3px] h-9 ${unit.side === 'player' ? 'bg-white' : 'bg-zinc-300'} mx-auto relative`}>
                   <div className={`absolute top-4 h-[4px] rounded-full origin-left transition-all ${unit.isAttacking ? 'scale-x-150 brightness-200' : ''} ${
@@ -326,23 +349,30 @@ const StickWarGame = () => {
         ))}
       </div>
 
-      <div className="absolute bottom-6 left-6 flex flex-col gap-3 z-[600]">
-          <div className="bg-blue-600/20 px-3 py-1 border border-blue-500/40 rounded text-[10px] font-black uppercase text-center backdrop-blur-md">Infantry</div>
-          {Object.entries(unitTypes).slice(0, 3).map(([key, config]) => (
-            <button key={key} onClick={() => spawnUnit('player', key)} className="group relative w-24 h-24 bg-slate-900/80 border-2 border-blue-500/50 rounded-2xl flex flex-col items-center justify-center hover:bg-blue-600 hover:scale-110 active:scale-95 transition-all shadow-2xl">
-              <span className="text-[10px] font-black uppercase group-hover:text-white">{config.name}</span>
-              <span className="text-sm font-bold text-yellow-400 group-hover:text-white mt-1">${config.cost}</span>
-            </button>
-          ))}
-      </div>
-      <div className="absolute bottom-6 right-6 flex flex-col gap-3 z-[600]">
-          <div className="bg-red-600/20 px-3 py-1 border border-red-500/40 rounded text-[10px] font-black uppercase text-center backdrop-blur-md">Elite Force</div>
-          {Object.entries(unitTypes).slice(3).map(([key, config]) => (
-            <button key={key} onClick={() => spawnUnit('player', key)} className="group relative w-24 h-24 bg-slate-900/80 border-2 border-red-500/50 rounded-2xl flex flex-col items-center justify-center hover:bg-red-600 hover:scale-110 active:scale-95 transition-all shadow-2xl">
-              <span className="text-[10px] font-black uppercase group-hover:text-white">{config.name}</span>
-              <span className="text-sm font-bold text-yellow-400 group-hover:text-white mt-1">${config.cost}</span>
-            </button>
-          ))}
+      {/* Bottom Menu Bar UI */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4 p-4 bg-slate-900/90 backdrop-blur-2xl border-2 border-white/10 rounded-3xl z-[1000] shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+          <div className="flex flex-col items-center pr-4 border-r border-white/10">
+              <span className="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-tighter">Barracks</span>
+              <div className="flex gap-2">
+                 {Object.entries(unitTypes).slice(0, 3).map(([key, config]) => (
+                   <button key={key} onClick={() => spawnUnit('player', key)} className="group relative w-20 h-20 bg-black/40 border border-white/10 rounded-2xl flex flex-col items-center justify-center hover:bg-blue-600 hover:scale-105 active:scale-95 transition-all">
+                     <span className="text-[9px] font-black uppercase text-white/70 group-hover:text-white">{config.name}</span>
+                     <span className="text-xs font-bold text-yellow-400 group-hover:text-white mt-1">${config.cost}</span>
+                   </button>
+                 ))}
+              </div>
+          </div>
+          <div className="flex flex-col items-center pl-2">
+              <span className="text-[10px] font-black text-purple-400 mb-2 uppercase tracking-tighter">Elite</span>
+              <div className="flex gap-2">
+                 {Object.entries(unitTypes).slice(3).map(([key, config]) => (
+                   <button key={key} onClick={() => spawnUnit('player', key)} className="group relative w-20 h-20 bg-black/40 border border-white/10 rounded-2xl flex flex-col items-center justify-center hover:bg-purple-600 hover:scale-105 active:scale-95 transition-all">
+                     <span className="text-[9px] font-black uppercase text-white/70 group-hover:text-white">{config.name}</span>
+                     <span className="text-xs font-bold text-yellow-400 group-hover:text-white mt-1">${config.cost}</span>
+                   </button>
+                 ))}
+              </div>
+          </div>
       </div>
 
       <div className="h-12 bg-black/90 px-10 flex items-center justify-between border-t border-white/10 z-[700]">
@@ -350,7 +380,7 @@ const StickWarGame = () => {
             <span>Battle Units: {units.length}</span>
             <span>Physics Engine: Stable</span>
          </div>
-         <span className="text-[10px] font-black text-white/50 tracking-[0.5em] italic">STICK WAR CLONE v0.8 HD</span>
+         <span className="text-[10px] font-black text-white/50 tracking-[0.5em] italic">STICK WAR CLONE v0.9 HD</span>
       </div>
 
       {gameOver && (
