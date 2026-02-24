@@ -15,19 +15,19 @@ const createParticles = (x, y, color, count = 8, type = 'pixel') => {
 
 const StickWarGame = () => {
   // --- STATE ---
-  const [gold, setGold] = useState(99999); // CHẾ ĐỘ "BẤT TỬ" VÀNG CHO TRẦN ĐỨC
-  const [enemyGold, setEnemyGold] = useState(1000); // GIẢM KINH TẾ ĐỊCH
+  const [gold, setGold] = useState(999999999); // CHẾ ĐỘ NHIỀU VÀNG ĐỂ TEST
+  const [enemyGold, setEnemyGold] = useState(5000); // TRẢ LẠI KINH TẾ CHO ĐỊCH ĐỂ CÂN BẰNG
   const [units, setUnits] = useState([]);
   const [projectiles, setProjectiles] = useState([]);
   const [particles, setParticles] = useState([]);
-  const [baseHealth, setBaseHealth] = useState({ player: 50000, enemy: 5000 }); // MÁU NHÀ TA VÔ ĐỐI
+  const [baseHealth, setBaseHealth] = useState({ player: 5000, enemy: 5000 }); // TRẢ LẠI MÁU CĂN BẢN
   const [gameOver, setGameOver] = useState(null);
   
   const [upgrades, setUpgrades] = useState({
-    swordDamage: 10, // TẶNG SẴN 10 CẤP SÁT THƯƠNG
-    archidonRange: 10,
-    minerEfficiency: 10,
-    magicPower: 10
+    swordDamage: 0,
+    archidonRange: 0,
+    minerEfficiency: 0,
+    magicPower: 0
   });
 
   const [cooldowns, setCooldowns] = useState({ arrowRain: 0, healAll: 0, meteor: 0 });
@@ -41,10 +41,10 @@ const StickWarGame = () => {
   // --- CONFIGURATION ---
   const unitTypes = {
     miner: { name: 'Miner', cost: 150, health: 200, damage: 0, speed: 2.2, type: 'worker', range: 45, attackSpeed: 1200, color: '#facc15' },
-    swordwrath: { name: 'Sword', cost: 125, health: 1000, damage: 100, speed: 4.5, type: 'soldier', range: 55, attackSpeed: 400, color: '#60a5fa' },
-    archidon: { name: 'Archidon', cost: 300, health: 500, damage: 80, speed: 3.5, type: 'soldier', range: 700, attackSpeed: 1000, color: '#fb923c' },
-    magikill: { name: 'Magikill', cost: 900, health: 800, damage: 200, speed: 2.2, type: 'mage', range: 500, attackSpeed: 2000, color: '#c084fc' },
-    giant: { name: 'Giant', cost: 2000, health: 9999, damage: 500, speed: 1.8, type: 'tank', range: 100, attackSpeed: 3000, color: '#94a3b8' }
+    swordwrath: { name: 'Sword', cost: 125, health: 350, damage: 30, speed: 3.8, type: 'soldier', range: 55, attackSpeed: 600, color: '#60a5fa' },
+    archidon: { name: 'Archidon', cost: 300, health: 220, damage: 25, speed: 3.0, type: 'soldier', range: 550, attackSpeed: 1600, color: '#fb923c' },
+    magikill: { name: 'Magikill', cost: 900, health: 300, damage: 60, speed: 1.8, type: 'mage', range: 450, attackSpeed: 3500, color: '#c084fc' },
+    giant: { name: 'Giant', cost: 2000, health: 3500, damage: 120, speed: 1.4, type: 'tank', range: 90, attackSpeed: 4000, color: '#94a3b8' }
   };
 
   const spawnUnit = (side, type) => {
