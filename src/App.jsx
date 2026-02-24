@@ -43,7 +43,8 @@ const StickWarGame = () => {
   const spawnUnit = (side, type) => {
     if (gameOver) return;
     const config = unitTypes[type];
-    if ((side === 'player' ? gold : enemyGold) >= config.cost) {
+    const currentGold = side === 'player' ? gold : enemyGold;
+    if (currentGold >= config.cost) {
       if (side === 'player') setGold(prev => prev - config.cost);
       else setEnemyGold(prev => prev - config.cost);
       setUnits(prev => [...prev, {
@@ -84,6 +85,13 @@ const StickWarGame = () => {
     setProjectiles(prev => [...prev, ...rain]);
   };
 
+  const castHealAll = () => {
+    if (cooldowns.healAll > 0 || gameOver) return;
+    setCooldowns(prev => ({ ...prev, healAll: 40 }));
+    setUnits(prev => prev.map(u => u.side === 'player' ? { ...u, currentHealth: Math.min(u.health, u.currentHealth + 200) } : u));
+    setParticles(prev => [...prev, ...createParticles(PLAYER_BASE_X + 200, 200, '#4ade80', 40)]);
+  };
+
   useEffect(() => {
     const update = () => {
       if (gameOver) return;
@@ -102,7 +110,7 @@ const StickWarGame = () => {
         const newUnits = prevUnits.map(unit => {
           let nextUnit = { ...unit };
           const enemies = prevUnits.filter(u => u.side !== unit.side);
-          const unitVisualY = GROUND_Y + (150 - (unit.y - 300)); // Precise visual Y for FX
+          const unitVisualY = GROUND_Y + (150 - (unit.y - 300)); 
 
           if (unit.type === 'worker') {
             const activeMines = mines.filter(m => m.amount > 0);
@@ -114,7 +122,8 @@ const StickWarGame = () => {
 
             if (unit.state === 'returning') {
               if (distToBase < 50) {
-                setGold(g => g + (30 + upgrades.minerEfficiency * 15));
+                if (unit.side === 'player') setGold(g => g + (30 + upgrades.minerEfficiency * 15));
+                else setEnemyGold(eg => eg + 30);
                 nextUnit.state = 'moving';
               } else { nextUnit.x += (unit.side === 'player' ? -1 : 1) * unit.speed; }
             } else if (distToMine < 25) {
@@ -187,6 +196,33 @@ const StickWarGame = () => {
     return () => cancelAnimationFrame(gameLoopRef.current);
   }, [projectiles, gameOver, upgrades, mines]);
 
+  // AI Mastermind
+  useEffect(() => {
+    if (gameOver) return;
+    const aiInterval = setInterval(() => {
+      const myUnits = units.filter(u => u.side === 'enemy');
+      const myMiners = myUnits.filter(u => u.type === 'worker').length;
+      if (myMiners < 3 && enemyGold >= 150) spawnUnit('enemy', 'miner');
+      else if (enemyGold >= 2000) spawnUnit('enemy', 'giant');
+      else if (enemyGold >= 900 && Math.random() > 0.7) spawnUnit('enemy', 'magikill');
+      else if (enemyGold >= 300) spawnUnit('enemy', Math.random() > 0.5 ? 'archidon' : 'swordwrath');
+      setEnemyGold(prev => prev + 10); 
+    }, 2500);
+    return () => clearInterval(aiInterval);
+  }, [enemyGold, units.length, gameOver]);
+
+  // Cooldown timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCooldowns(prev => ({
+        arrowRain: Math.max(0, prev.arrowRain - 1),
+        healAll: Math.max(0, prev.healAll - 1),
+        meteor: Math.max(0, prev.meteor - 1)
+      }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="relative w-full h-screen bg-[#020617] overflow-hidden flex flex-col select-none text-white font-sans">
       
@@ -232,11 +268,8 @@ const StickWarGame = () => {
         </div>
       </div>
 
-      {/* World Display */}
       <div className="relative flex-1 w-full bg-[#030712] overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,_#1e1b4b,_transparent)]"></div>
-        
-        {/* Depleting Mines */}
         {mines.map(mine => (
           <div key={mine.id} className="absolute bottom-40 w-40 h-40 flex flex-col items-center" style={{ left: mine.x, transform: 'translateX(-50%)' }}>
               <div className={`relative w-32 h-20 bg-gradient-to-br from-yellow-500 via-yellow-700 to-yellow-900 rounded-2xl shadow-2xl border-2 border-yellow-300 flex flex-col items-center justify-center transition-opacity duration-1000 ${mine.amount <= 0 ? 'opacity-20 grayscale' : 'opacity-100'}`}>
@@ -248,15 +281,9 @@ const StickWarGame = () => {
               <div className="mt-3 text-sm font-black text-yellow-500 drop-shadow-lg">{mine.amount > 0 ? `${mine.amount} G` : 'EXHAUSTED'}</div>
           </div>
         ))}
-
-        {/* Bases */}
         <div className="absolute left-0 bottom-40 w-56 h-[500px] border-l-[25px] border-blue-600/30 bg-gradient-to-r from-blue-600/10 to-transparent rounded-tr-full"></div>
         <div className="absolute right-0 bottom-40 w-56 h-[500px] border-r-[25px] border-red-600/30 bg-gradient-to-l from-red-600/10 to-transparent rounded-tl-full"></div>
-
-        {/* Ground */}
         <div className="absolute bottom-0 w-full h-[100px] bg-zinc-950 border-t-4 border-zinc-900 shadow-[0_-50px_100px_rgba(0,0,0,0.9)]"></div>
-
-        {/* VFX Layer (Projectiles & Particles) */}
         {particles.map(p => ( <div key={p.id} className="absolute w-2 h-2 rounded-full pointer-events-none blur-[1px] z-[1000]" style={{ left: p.x, bottom: p.y, backgroundColor: p.color, opacity: p.life }}></div> ))}
         {projectiles.map(p => ( 
           <div key={p.id} 
@@ -265,8 +292,6 @@ const StickWarGame = () => {
              {p.isMeteor && <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></div>}
           </div> 
         ))}
-
-        {/* Units Layer */}
         {units.map(unit => (
           <div
             key={unit.id}
@@ -278,16 +303,12 @@ const StickWarGame = () => {
             }}
             className="absolute transition-all duration-75 flex flex-col items-center"
           >
-            {/* Health Bar */}
             <div className="w-12 h-1.5 bg-black/80 mb-2 rounded-full overflow-hidden border border-white/20 shadow-lg">
                <div className={`h-full ${unit.side === 'player' ? 'bg-gradient-to-r from-blue-600 to-blue-400' : 'bg-gradient-to-r from-red-700 to-red-500'}`} style={{ width: `${(unit.currentHealth/unit.health)*100}%` }}></div>
             </div>
-
-            {/* High Detail Stickman */}
             <div className={`relative ${unit.side === 'enemy' ? 'scale-x-[-1]' : ''}`}>
                <div className={`w-5 h-5 rounded-full border-2 ${unit.side === 'player' ? 'bg-white border-blue-400 shadow-[0_0_10px_#3b82f6]' : 'bg-zinc-300 border-red-600 shadow-[0_0_10px_#ef4444]'}`}></div>
                <div className={`w-[3px] h-9 ${unit.side === 'player' ? 'bg-white' : 'bg-zinc-300'} mx-auto relative`}>
-                  {/* Arms & Weapon - Adjusted Height */}
                   <div className={`absolute top-4 h-[4px] rounded-full origin-left transition-all ${unit.isAttacking ? 'scale-x-150 brightness-200' : ''} ${
                     unit.name === 'Sword' ? 'w-10 bg-slate-200 rotate-[45deg] border border-blue-300' : 
                     unit.name === 'Archidon' ? 'w-8 bg-orange-900 rotate-[-10deg]' :
@@ -305,7 +326,6 @@ const StickWarGame = () => {
         ))}
       </div>
 
-      {/* Sidebar Spawner Controls */}
       <div className="absolute bottom-6 left-6 flex flex-col gap-3 z-[600]">
           <div className="bg-blue-600/20 px-3 py-1 border border-blue-500/40 rounded text-[10px] font-black uppercase text-center backdrop-blur-md">Infantry</div>
           {Object.entries(unitTypes).slice(0, 3).map(([key, config]) => (
@@ -325,7 +345,6 @@ const StickWarGame = () => {
           ))}
       </div>
 
-      {/* Footer Info */}
       <div className="h-12 bg-black/90 px-10 flex items-center justify-between border-t border-white/10 z-[700]">
          <div className="flex gap-10 text-[10px] font-mono text-white/30 tracking-widest uppercase italic">
             <span>Battle Units: {units.length}</span>
@@ -337,7 +356,7 @@ const StickWarGame = () => {
       {gameOver && (
         <div className="absolute inset-0 bg-black/95 z-[10000] flex flex-col items-center justify-center backdrop-blur-3xl">
            <h1 className={`text-9xl font-black mb-12 italic ${gameOver.includes('ORDER') ? 'text-blue-500 drop-shadow-[0_0_50px_#3b82f6]' : 'text-red-600'}`}>{gameOver}</h1>
-           <button onClick={() => window.location.reload()} className="px-20 py-8 bg-white text-black font-black text-4xl rounded-full hover:bg-yellow-400 transition-all hover:scale-105">NEW WAR</button>
+           <button onClick={() => window.location.reload()} className="px-20 py-8 bg-white text-black font-black text-3xl rounded-full hover:bg-yellow-400 transition-all hover:scale-105">NEW WAR</button>
         </div>
       )}
     </div>
